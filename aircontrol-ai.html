@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AirControl AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EDF2F1;--sf:#fff;--ink:#12262B;--mut:#5B6F73;--ln:#D3DEDC;--ac:#0F7C7A;--acink:#fff;--st:#C8402F;--stage:#0E1C20;--glow:#7FE3D4;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0B1315;--sf:#142125;--ink:#E6F0EF;--mut:#8DA3A6;--ln:#24363A;--ac:#3CC4BE;--acink:#06201f;--st:#E0644F;--stage:#071012}}
+:root[data-theme="dark"]{--bg:#0B1315;--sf:#142125;--ink:#E6F0EF;--mut:#8DA3A6;--ln:#24363A;--ac:#3CC4BE;--acink:#06201f;--st:#E0644F;--stage:#071012}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.hide{display:none!important}
+.login{min-height:100vh;display:grid;place-items:center;padding:24px}
+.login-box{width:100%;max-width:420px}
+h1{font-size:clamp(2.4rem,9vw,3.6rem);line-height:1;margin:0 0 12px;font-weight:800;letter-spacing:-.03em}
+.lede{color:var(--mut);margin:0 0 28px;max-width:34ch}
+label{display:block;font-weight:600;margin:16px 0 6px}
+input[type=text],input[type=email]{width:100%;padding:12px 14px;border:1px solid var(--ln);border-radius:10px;background:var(--sf)}
+.err{color:var(--st);min-height:1.5em;margin:8px 0 0;font-size:.95rem}
+.btn{border:0;border-radius:10px;padding:13px 22px;font-weight:600;cursor:pointer;background:var(--ac);color:var(--acink)}
+.btn.stop{background:var(--st);color:#fff}
+.btn.ghost{background:transparent;border:1px solid var(--ln);color:var(--ink);padding:8px 14px}
+.btn:disabled{opacity:.6;cursor:wait}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px clamp(16px,4vw,40px);border-bottom:1px solid var(--ln)}
+.brand{font-weight:800;font-size:1.25rem;letter-spacing:-.02em}
+.who{display:flex;align-items:center;gap:12px;color:var(--mut);font-size:.95rem}
+main{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:28px;padding:28px clamp(16px,4vw,40px);max-width:1200px;margin:0 auto}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+.stage{background:var(--stage);border-radius:18px;overflow:hidden;position:relative}
+canvas{display:block;width:100%;aspect-ratio:4/3}
+.badge{position:absolute;left:14px;top:14px;padding:6px 12px;border-radius:99px;background:rgba(255,255,255,.1);color:#E6F0EF;font-size:.9rem}
+.now{position:absolute;left:14px;bottom:14px;right:14px;color:#E6F0EF}
+.now b{display:block;font-size:1.5rem;color:var(--glow);letter-spacing:-.01em}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:16px}
+.note{color:var(--mut);font-size:.92rem;margin:12px 0 0;max-width:62ch}
+h2{font-size:1.15rem;margin:0 0 10px}
+section{margin-bottom:28px}
+.stat{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--ln)}
+.stat span:first-child{color:var(--mut)}
+.g{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;margin-bottom:6px;border:1px solid var(--ln);border-radius:12px;background:var(--sf)}
+.g.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
+.g small{display:block;color:var(--mut)}
+.sw{width:42px;height:24px;accent-color:var(--ac)}
+.row{margin-bottom:14px}
+.row div{display:flex;justify-content:space-between}
+input[type=range]{width:100%;accent-color:var(--ac)}
+ul.log{list-style:none;margin:0;padding:0;color:var(--mut);font-size:.92rem}
+ul.log li{padding:5px 0;border-bottom:1px solid var(--ln)}
+ul.log li:empty{display:none}
+</style>
+</head>
+<body>
+
+<div class="login" id="login">
+  <div class="login-box">
+    <h1>Control your laptop from the air.</h1>
+    <p class="lede">Move, click, scroll and zoom with your hand. Your webcam video stays on your computer.</p>
+    <form id="lf" novalidate>
+      <label for="name">Your name</label>
+      <input type="text" id="name" autocomplete="name" required>
+      <label for="email">Email</label>
+      <input type="email" id="email" autocomplete="email" required>
+      <p class="err" id="err" role="alert"></p>
+      <button class="btn" type="submit">Open dashboard</button>
+    </form>
+  </div>
+</div>
+
+<div id="app" class="hide">
+  <header>
+    <span class="brand">AirControl AI</span>
+    <div class="who"><span id="hello"></span><button class="btn ghost" id="out">Sign out</button></div>
+  </header>
+  <main>
+    <div>
+      <div class="stage">
+        <canvas id="cv"></canvas>
+        <span class="badge" id="badge">Sensing is off</span>
+        <div class="now" id="now"></div>
+      </div>
+      <div class="bar">
+        <button class="btn" id="go">Start sensing</button>
+        <span class="note" style="margin:0" id="msg" role="status" aria-live="polite">Press Esc at any time to stop.</span>
+      </div>
+      <p class="note">The camera and cursor control run in the AirControl desktop agent on your laptop. This page starts and stops the agent and sets your gestures. Without the agent running, you see a simulated hand so you can learn the gestures.</p>
+    </div>
+    <div>
+      <section>
+        <h2>Status</h2>
+        <div class="stat"><span>Desktop agent</span><span id="s-agent">Not connected</span></div>
+        <div class="stat"><span>Sensing</span><span id="s-sense">Off</span></div>
+        <div class="stat"><span>Control mode</span><span id="s-mode">None</span></div>
+      </section>
+      <section>
+        <h2>Gestures</h2>
+        <div id="gl"></div>
+      </section>
+      <section>
+        <h2>Tuning</h2>
+        <div class="row"><div><label for="sens" style="margin:0">Cursor speed</label><span id="v-sens">50</span></div><input type="range" id="sens" min="10" max="100" value="50"></div>
+        <div class="row"><div><label for="smo" style="margin:0">Smoothing</label><span id="v-smo">60</span></div><input type="range" id="smo" min="0" max="100" value="60"></div>
+        <div class="row"><div><label for="scr" style="margin:0">Scroll speed</label><span id="v-scr">40</span></div><input type="range" id="scr" min="10" max="100" value="40"></div>
+      </section>
+      <section>
+        <h2>Recent actions</h2>
+        <ul class="log" id="log"><li>Nothing yet. Start sensing to begin.</li></ul>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+let user=null,sensing=false,ws=null,raf=0,mode='none',t0=0,scene=-1,live=null,liveLm=null;
+
+const G=[
+ {id:'move',n:'Move cursor',d:'Raise your index finger'},
+ {id:'click',n:'Left click',d:'Pinch thumb and index'},
+ {id:'rclick',n:'Right click',d:'Pinch thumb and middle finger'},
+ {id:'dbl',n:'Double click',d:'Pinch twice quickly'},
+ {id:'scroll',n:'Scroll',d:'Index and middle up, thumb tucked; move up or down'},
+ {id:'zoom',n:'Zoom',d:'Index, middle and thumb out; spread or close thumb and index'},
+ {id:'pause',n:'Pause control',d:'Close your fist; open to resume'}
+];
+const enabled={};G.forEach(g=>enabled[g.id]=true);
+$('#gl').innerHTML=G.map(g=>`<label class="g" id="g-${g.id}" style="margin:0 0 6px"><span>${g.n}<small>${g.d}</small></span><input class="sw" type="checkbox" data-id="${g.id}" checked></label>`).join('');
+$('#gl').addEventListener('change',e=>{enabled[e.target.dataset.id]=e.target.checked;sendSettings()});
+['sens','smo','scr'].forEach(k=>$('#'+k).addEventListener('input',()=>{$('#v-'+k).textContent=$('#'+k).value;sendSettings()}));
+
+try{const u=JSON.parse(localStorage.getItem('acUser')||'null');if(u){$('#name').value=u.name;$('#email').value=u.email}}catch(e){}
+
+$('#lf').addEventListener('submit',e=>{
+  e.preventDefault();
+  const name=$('#name').value.trim(),email=$('#email').value.trim();
+  if(!name){$('#err').textContent='Enter your name to continue.';return}
+  if(!/^\S+@\S+\.\S+$/.test(email)){$('#err').textContent='Enter a valid email, like name@example.com.';return}
+  user={name,email};
+  try{localStorage.setItem('acUser',JSON.stringify(user))}catch(e){}
+  $('#err').textContent='';$('#hello').textContent='Hi, '+name;
+  $('#login').classList.add('hide');$('#app').classList.remove('hide');
+  idle();
+});
+$('#out').addEventListener('click',()=>{if(sensing)stop();$('#app').classList.add('hide');$('#login').classList.remove('hide')});
+
+function settings(){return{cursorSpeed:+$('#sens').value,smoothing:+$('#smo').value,scrollSpeed:+$('#scr').value,gestures:enabled}}
+function send(o){try{if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}catch(e){}}
+function sendSettings(){send({cmd:'settings',settings:settings()})}
+
+function connect(){return new Promise(res=>{
+  try{
+    const s=new WebSocket('ws://127.0.0.1:8765');
+    const to=setTimeout(()=>{try{s.close()}catch(e){};res(null)},1500);
+    s.onopen=()=>{clearTimeout(to);res(s)};
+    s.onerror=()=>{clearTimeout(to);res(null)};
+  }catch(e){res(null)}
+})}
+
+$('#go').addEventListener('click',()=>sensing?stop():start());
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sensing)stop()});
+
+async function start(){
+  const b=$('#go');b.disabled=true;b.textContent='Connecting…';
+  ws=await connect();
+  b.disabled=false;
+  sensing=true;liveLm=null;mode=ws?'live':'preview';scene=-1;t0=performance.now();
+  if(ws){
+    ws.onmessage=ev=>{try{const m=JSON.parse(ev.data);if('lm' in m)liveLm=m.lm;if(m.gesture){live=m.gesture;note(m.gesture,m.detail||'')}}catch(e){}};
+    ws.onclose=()=>{if(sensing){stop();$('#msg').textContent='The desktop agent disconnected, so sensing stopped.'}};
+    send({cmd:'start',user,settings:settings()});
+    $('#msg').textContent='Live control is on. Your hand now moves the real cursor.';
+  }else{
+    $('#msg').textContent='No desktop agent found. Showing a simulated hand. On this laptop, double-click run_windows.bat (or AirControlAI.exe) on it, then press Start sensing again.';
+  }
+  b.textContent='Stop sensing';b.classList.add('stop');
+  $('#badge').textContent=ws?'Live control':'Preview';
+  $('#s-agent').textContent=ws?'Connected':'Not connected';
+  $('#s-sense').textContent='On';
+  $('#s-mode').textContent=ws?'Real cursor':'Simulated';
+  $('#log').innerHTML='';
+  loop();
+}
+function stop(){
+  sensing=false;cancelAnimationFrame(raf);
+  send({cmd:'stop'});try{ws&&ws.close()}catch(e){};ws=null;mode='none';
+  const b=$('#go');b.textContent='Start sensing';b.classList.remove('stop');
+  $('#badge').textContent='Sensing is off';
+  $('#s-agent').textContent='Not connected';$('#s-sense').textContent='Off';$('#s-mode').textContent='None';
+  $('#msg').textContent='Stopped. Camera and control are off. Press Start sensing to resume.';
+  $('#now').innerHTML='';document.querySelectorAll('.g').forEach(x=>x.classList.remove('on'));
+  idle();
+}
+
+const F=[
+ {b:[-.55,-.25],a:-135,l:[.45,.35,.3]},
+ {b:[-.32,-1],a:-97,l:[.55,.38,.3]},
+ {b:[-.02,-1.07],a:-90,l:[.6,.42,.32]},
+ {b:[.27,-1],a:-83,l:[.55,.38,.3]},
+ {b:[.5,-.85],a:-75,l:[.45,.3,.25]}
+];
+function hand(c){
+  const P=[[0,0]];
+  F.forEach((f,i)=>{let[x,y]=f.b,a=f.a*Math.PI/180;P.push([x,y]);f.l.forEach(L=>{a+=c[i]*.9;x+=Math.cos(a)*L;y+=Math.sin(a)*L;P.push([x,y])})});
+  return P;
+}
+const S=[
+ {id:'move',n:'Move cursor',d:'Pointer follows your index finger',c:t=>[.9,0,1.4,1.4,1.4],o:t=>[Math.sin(t*2)*.6,Math.cos(t*1.4)*.15]},
+ {id:'click',n:'Left click',d:'Thumb and index pinched',c:t=>{const p=(Math.sin(t*6)+1)/2;return[.25+.4*p,.1+.4*p,.1,.1,.1]},o:t=>[0,0]},
+ {id:'scroll',n:'Scroll',d:'Two fingers moving up and down',c:t=>[1.2,0,0,1.4,1.4],o:t=>[0,Math.sin(t*3)*.35]},
+ {id:'zoom',n:'Zoom',d:'Pinch spreading and closing',c:t=>{const s=(Math.sin(t*3)+1)/2;return[.75*(1-s)+.1,.1+.45*s,1.4,1.4,1.4]},o:t=>[0,0]},
+ {id:'pause',n:'Pause control',d:'Fist held, cursor frozen',c:t=>[1.3,1.4,1.4,1.4,1.4],o:t=>[0,0]}
+];
+const cv=$('#cv'),cx=cv.getContext('2d');
+function fit(){const r=window.devicePixelRatio||1;cv.width=cv.clientWidth*r;cv.height=cv.clientHeight*r;cx.setTransform(r,0,0,r,0,0)}
+window.addEventListener('resize',()=>{fit();if(!sensing)idle()});
+
+function note(n,d){
+  $('#now').innerHTML='<b></b><span></span>';$('#now b').textContent=n;$('#now span').textContent=d;
+  const li=document.createElement('li');li.textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})+'  '+n;
+  $('#log').prepend(li);while($('#log').children.length>6)$('#log').lastChild.remove();
+}
+function mark(id){document.querySelectorAll('.g').forEach(x=>x.classList.toggle('on',x.id==='g-'+id))}
+
+function draw(P,off,active){
+  const W=cv.clientWidth,H=cv.clientHeight,k=H/3.6;
+  cx.clearRect(0,0,W,H);
+  const X=p=>W/2+(p[0]+off[0])*k,Y=p=>H*.9+(p[1]+off[1])*k;
+  const css=getComputedStyle(document.documentElement);
+  const glow=css.getPropertyValue('--glow').trim();
+  cx.strokeStyle=glow;cx.fillStyle=glow;cx.lineWidth=2.5;cx.lineCap='round';
+  const E=[];for(let f=0;f<5;f++){const s=1+f*4;E.push([0,s]);for(let j=0;j<3;j++)E.push([s+j,s+j+1])}
+  [[1,5],[5,9],[9,13],[13,17]].forEach(e=>E.push(e));
+  cx.globalAlpha=.7;cx.beginPath();E.forEach(e=>{cx.moveTo(X(P[e[0]]),Y(P[e[0]]));cx.lineTo(X(P[e[1]]),Y(P[e[1]]))});cx.stroke();
+  cx.globalAlpha=1;P.forEach(p=>{cx.beginPath();cx.arc(X(p),Y(p),4,0,7);cx.fill()});
+  const tip=P[8];cx.beginPath();cx.arc(X(tip),Y(tip),active?16:10,0,7);cx.stroke();
+}
+function loop(){
+  if(!sensing)return;
+  const t=(performance.now()-t0)/1000;
+  if(mode==='preview'){
+    const i=Math.floor(t/2.6)%S.length,s=S[i];
+    if(i!==scene){scene=i;note(s.n,s.d);mark(s.id)}
+    draw(hand(s.c(t)),s.o(t),s.id==='click');
+  }else{
+    if(live){const g=G.find(x=>x.n===live||x.id===live);if(g)mark(g.id)}
+    if(liveLm){const W=cv.clientWidth,H=cv.clientHeight,k=H/3.6;draw(liveLm.map(p=>[(p[0]*W-W/2)/k,(p[1]*H-H*.9)/k]),[0,0],false)}else{idle();cx.fillStyle='#E6F0EF';cx.font='16px system-ui';cx.fillText('Show your hand to the camera',16,cv.clientHeight/2)}
+  }
+  raf=requestAnimationFrame(loop);
+}
+function idle(){
+  fit();const W=cv.clientWidth,H=cv.clientHeight;cx.clearRect(0,0,W,H);
+  draw(hand([.2,.15,.15,.2,.25]),[0,0],false);
+  cx.fillStyle='rgba(7,16,18,.62)';cx.fillRect(0,0,W,H);
+}
+fit();
+</script>
+</body>
+</html>
